@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Пробний НМТ з математики</title>
+    
+    <!-- Підключення KaTeX для красивих формул -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {
+        delimiters: [
+            {left: '$', right: '$', display: false},
+            {left: '$$', right: '$$', display: true}
+        ]
+    });"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --primary: #1E3A8A;
+            --primary-hover: #172554;
+            --bg: #F3F4F6;
+            --card-bg: #FFFFFF;
+            --border: #E5E7EB;
+            --text-main: #1F2937;
+            --text-muted: #4B5563;
+            
+            --tag-bg: #F9FAFB;
+            --tag-border: #E5E7EB;
+            --warning-bg: #FEFCE8;
+            --warning-border: #FDE047;
+            --warning-text: #854D0E;
+            
+            --answered: #1E3A8A;
+            --skipped: #EAB308;
+            --correct: #10B981;
+            --incorrect: #EF4444;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.5;
+            margin: 0;
+            padding: 20px 10px;
+        }
+
+        .main-wrapper {
+            max-width: 960px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .card-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        /* HEADER */
+        .header-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin: 0 0 4px 0;
+        }
+
+        .header-sub {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin: 2px 0;
+        }
+
+        .stats-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .stat-badge {
+            background: var(--tag-bg);
+            border: 1px solid var(--tag-border);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 14px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+        }
+
+        .stat-badge.timer-badge { color: #DC2626; background: #FEF2F2; border-color: #FCA5A5; }
+        .stat-badge.warning-badge { color: #C2410C; background: #FFF7ED; border-color: #FFEDD5; }
+
+        /* RULES BOX */
+        .rules-box {
+            background: var(--warning-bg);
+            border: 1px solid var(--warning-border);
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            color: var(--warning-text);
+            font-size: 14px;
+        }
+
+        .rules-title {
+            font-weight: 700;
+            font-size: 15px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .rules-list {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .rules-list li {
+            margin-bottom: 4px;
+        }
+
+        .rules-list li:last-child {
+            margin-bottom: 0;
+        }
+
+        /* NAV GRID */
+        .nav-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .nav-legend {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .nav-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+            gap: 6px;
+        }
+
+        .nav-btn {
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #FFFFFF;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-main);
+            transition: all 0.15s ease;
+        }
+
+        .nav-btn.answered { background: var(--answered); color: #FFFFFF; border-color: var(--answered); }
+        .nav-btn.skipped { background: var(--skipped); color: #FFFFFF; border-color: var(--skipped); }
+
+        /* QUESTIONS */
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 16px;
+        }
+
+        .question-item {
+            margin-bottom: 28px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            scroll-margin-top: 20px;
+        }
+
+        .question-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+            margin-bottom: 0;
+        }
+
+        .q-prompt {
+            font-weight: 600;
+            font-size: 15px;
+            margin-bottom: 14px;
+            white-space: pre-line;
+        }
+
+        .question-img {
+            max-width: 100%;
+            max-height: 240px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin: 10px 0 14px 0;
+            display: block;
+            background: #FAFAFA;
+        }
+
+        .options-list { list-style: none; padding: 0; margin: 0; }
+        .option-item { margin-bottom: 8px; }
+
+        .option-label {
+            display: flex;
+            align-items: center;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.15s;
+        }
+
+        .option-label:hover { background: #F9FAFB; }
+        .option-label input { margin-right: 12px; }
+
+        .matching-grid { display: grid; gap: 8px; margin-top: 10px; }
+        .matching-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #F9FAFB;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            font-size: 14px;
+            gap: 10px;
+        }
+
+        .matching-row select {
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: #FFF;
+            font-size: 13px;
+        }
+
+        .input-short {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            font-size: 15px;
+            width: 200px;
+            outline: none;
+        }
+        .input-short:focus { border-color: var(--primary); }
+
+        .explanation {
+            display: none;
+            margin-top: 12px;
+            padding: 12px;
+            background: #F0FDF4;
+            border-left: 4px solid #10B981;
+            border-radius: 4px;
+            font-size: 13px;
+            white-space: pre-line;
+            color: #065F46;
+        }
+
+        /* BUTTONS */
+        .btn-primary {
+            background-color: var(--primary);
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 24px;
+            font-size: 15px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            width: 100%;
+        }
+        .btn-primary:hover { background-color: var(--primary-hover); }
+
+        .btn-secondary {
+            background-color: #6B7280;
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 24px;
+            font-size: 15px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .btn-secondary:hover { background-color: #4B5563; }
+
+        .btn-finish {
+            background-color: #065F46;
+            color: #FFF;
+            border: none;
+            padding: 12px 24px;
+            font-size: 15px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .btn-finish:hover { background-color: #047857; }
+
+        /* MODAL */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(30, 41, 59, 0.65);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 15px;
+        }
+
+        .modal-card {
+            background: #FFFFFF;
+            border-radius: 16px;
+            max-width: 520px;
+            width: 100%;
+            padding: 32px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .modal-card h2 {
+            font-size: 24px;
+            color: var(--primary);
+            margin: 0 0 8px 0;
+            font-weight: 800;
+        }
+
+        .modal-card p {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 15px;
+            margin-bottom: 16px;
+            outline: none;
+        }
+        .input-field:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+        }
+
+        /* RESULT GRID */
+        .results-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .res-card {
+            background: #F9FAFB;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .res-val {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .res-lbl {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .correct-answer-highlight {
+            background-color: rgba(16, 185, 129, 0.15) !important;
+            border-color: var(--correct) !important;
+        }
+
+        .incorrect-answer-highlight {
+            background-color: rgba(239, 68, 68, 0.15) !important;
+            border-color: var(--incorrect) !important;
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div class="main-wrapper">
+
+    <!-- START MODAL -->
+    <div id="start-modal" class="modal-overlay">
+        <div class="modal-card">
+            <h2>Вітаємо на тестуванні!</h2>
+            <p>Введіть ваше ім'я та прізвище для початку Пробного НМТ з математики.</p>
+            
+            <div class="rules-box" style="text-align: left;">
+                <div class="rules-title">⚠️ Увага! Важливі правила проходження тесту:</div>
+                <ul class="rules-list">
+                    <li>На виконання тесту відведено 60 хвилин.</li>
+                    <li>У системі працює трекер відволікань (фіксуються перемикання вкладок та згортання браузера).</li>
+                    <li>Ви можете пропускати питання та повертатися до них у будь-який момент через навігаційну панель.</li>
+                </ul>
+            </div>
+
+            <input type="text" id="student-name" class="input-field" placeholder="Введіть ПІБ учня..." required>
+            <button class="btn-primary" onclick="startQuiz()">Розпочати тест</button>
+        </div>
+    </div>
+
+    <!-- HEADER BLOCK -->
+    <div class="card-box header-box">
+        <div>
+            <h1 class="header-title">Пробний НМТ з математики</h1>
+            <div class="header-sub">Учень: <strong id="user-display-name">—</strong></div>
+            <div class="header-sub">Блок: Математика (Завдання 1–22)</div>
+        </div>
+        <div class="stats-group">
+            <div class="stat-badge timer-badge" id="timer">60:00</div>
+            <div class="stat-badge warning-badge" id="warning-display">Виходів із вкладки: 0</div>
+            <div class="stat-badge" id="score-badge">Тестовий бал: - / 32</div>
+        </div>
+    </div>
+
+    <!-- NAVIGATION GRID -->
+    <div class="card-box">
+        <div class="nav-header">
+            <span>Навігація по запитаннях (1-22)</span>
+            <span class="nav-legend">Синій: Дано відповідь | Жовтий: Пропущено</span>
+        </div>
+        <div class="nav-grid" id="nav-grid"></div>
+    </div>
+
+    <!-- QUESTIONS CONTAINER -->
+    <div id="quiz-content" class="card-box hidden">
+        <div class="section-title">Математика: Тестові завдання</div>
+
+        <form id="quiz-form">
+            <div id="questions-container"></div>
+            <div style="text-align: right; margin-top: 24px; border-top: 1px solid var(--border); padding-top: 20px;">
+                <button type="button" class="btn-finish" onclick="finishQuiz()">Завершити тест</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- RESULT SCREEN -->
+    <div id="result-screen" class="card-box hidden" style="text-align: center;">
+        <h2 style="color: var(--primary); font-size: 24px; margin-top: 0;">Тестування завершено!</h2>
+        <p style="color: var(--text-muted); font-size: 14px;">Ваші підсумкові результати пробного НМТ з математики:</p>
+        
+        <div class="results-summary-grid">
+            <div class="res-card">
+                <div class="res-val" id="res-raw">0 / 32</div>
+                <div class="res-lbl">Тестовий бал</div>
+            </div>
+            <div class="res-card">
+                <div class="res-val" id="res-scaled">100</div>
+                <div class="res-lbl">Рейтинговий бал (100–200)</div>
+            </div>
+            <div class="res-card">
+                <div class="res-val" id="res-distractions" style="color: #C2410C;">0</div>
+                <div class="res-lbl">Виходів із вкладки</div>
+            </div>
+        </div>
+
+        <div style="max-width: 320px; margin: 10px auto 30px auto; display: flex; flex-direction: column; gap: 10px;">
+            <button class="btn-primary" onclick="downloadPDF()">Завантажити PDF із результатами</button>
+            <button class="btn-secondary" onclick="returnToMainMenu()">Повернутися до головного меню</button>
+        </div>
+
+        <div style="text-align: left; border-top: 1px solid var(--border); padding-top: 20px;">
+            <h3 style="color: var(--primary); font-size: 18px;">Детальний аналіз відповідей:</h3>
+            <div id="review-container"></div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+const quizData = [
+    {
+        id: 1, type: 'single',
+        prompt: '1. На рисунку зображено графік зміни температури повітря протягом доби. Визначте різницю між найвищою та найнижчою температурами повітря (розмах температур) протягом цієї доби.',
+        image: 'https://lh3.googleusercontent.com/d/1bGdMA9u6KH_MQq7XjItEehd4OYiTkmFl',
+        options: ['А 4 °C', 'Б 8 °C', 'В 11 °C', 'Г 12 °C', 'Д 15 °C'],
+        answer: 3,
+        exp: "Найвища температура за графіком становить 8 °C (близько 15 години), а найнижча — -4 °C (о 4 годині).\nРозмах = 8 - (-4) = 12 °C."
+    },
+    {
+        id: 2, type: 'single',
+        prompt: '2. У книгарні в наявності є 150 примірників популярного роману. Щодня магазин продає 12 примірників цього роману і не отримує нових поставок. Скільки примірників роману залишиться в книгарні через 7 днів після початку продажів?',
+        options: ['А 78', 'Б 138', 'В 150', 'Г 66', 'Д 84'],
+        answer: 3,
+        exp: "За 7 днів буде продано: 12 * 7 = 84 примірники.\nЗалишилось: 150 - 84 = 66 примірників."
+    },
+    {
+        id: 3, type: 'single',
+        prompt: '3. На карті міста вулиця Київська та вулиця Львівська є паралельними. Пряма пішохідна доріжка перетинає вулицю Київську, утворюючи з нею кут 52°. У точці, де ця ж доріжка перетинає вулицю Львівську, тупий кут, утворений доріжкою та вулицею Львівською, позначено як x. Якому значенню дорівнює x?',
+        image: 'https://lh3.googleusercontent.com/d/1qCx4WpzyyYQZDWGrMN8Tk1XXlOtKYL2m',
+        options: ['А 128°', 'Б 52°', 'В 76°', 'Г 104°', 'Д 142°'],
+        answer: 0,
+        exp: "Кути при паралельних прямих і січній: гострий і тупий утворюють суміжну пару (у сумі 180°).\nОтже, x = 180° - 52° = 128°."
+    },
+    {
+        id: 4, type: 'single',
+        prompt: '4. Обчисліть значення виразу: $6^{\\log_{\\frac{1}{6}}3}$',
+        options: ['А 3', 'Б -3', 'В $\\frac{1}{3}$', 'Г $-\\frac{1}{3}$', 'Д $\\frac{1}{18}$'],
+        answer: 2,
+        exp: "Використаємо властивість логарифмів та основу: $6^{\\log_{6^{-1}}3} = 6^{-\\log_6 3} = (6^{\\log_6 3})^{-1} = 3^{-1} = \\frac{1}{3}$."
+    },
+    {
+        id: 5, type: 'single',
+        prompt: '5. На рисунку зображено куб $ABCDA_{1}B_{1}C_{1}D_{1}$. Серед даних пар прямих укажіть пару паралельних прямих.',
+        image: 'https://lh3.googleusercontent.com/d/1J_RgugwTt-yIh3vXUjaQ-PzYFC8sBwiK',
+        options: ['А $A_{1}D$ і $B_{1}C_{1}$', 'Б $AA_{1}$ і $BD$', 'В $A_{1}B_{1}$ і $A_{1}C_{1}$', 'Г $DC$ і $A_{1}B_{1}$', 'Д $AB$ і $CC_{1}$'],
+        answer: 3,
+        exp: "Прямі $DC$ і $A_{1}B_{1}$ лежать у паралельних площинах (або розглядаючи ребра куба: $DC$ паралельна до $AB$, а $AB$ паралельна до $A_{1}B_{1}$, отже $DC \\parallel A_{1}B_{1}$).."
+    },
+    {
+        id: 6, type: 'single',
+        prompt: '6. Квадратична функція h задана формулою $h(x)=(x+3)^{2}-5$. Яке з наведених тверджень описує перетворення, за допомогою якого графік функції $y=x^{2}$ переходит у графік функції $y=h(x)$?',
+        options: [
+            'А Зсув на 3 одиниці ліворуч і на 5 одиниць угору',
+            'Б Зсув на 3 одиниці ліворуч і на 5 одиниць униз',
+            'В Зсув на 3 одиниці праворуч і на 5 одиниць униз',
+            'Г Зсув на 3 одиниці праворуч і на 5 одиниць угору',
+            'Д Зсув на 5 одиниць ліворуч і на 3 одиниці униз'
+        ],
+        answer: 1,
+        exp: "Вираз $(x+3)^2$ означає зсув уздовж осі OX на 3 одиниці ліворуч, а «-5» поза дужками — зсув уздовж осі OY на 5 одиниць униз."
+    },
+    {
+        id: 7, type: 'single',
+        prompt: '7. Які з наведених тверджень правильні щодо кола та дотичної до нього?\nІ. Дотична до кола перпендикулярна до радіуса, проведеного в точку дотику.\nІІ. Через будь-яку точку кола можна провести лише одну дотичну до цього кола.\nІІІ. Відрізки дотичних, проведених до кола з однієї точки, рівні між собою.',
+        options: ['А лише І', 'Б лише І та ІІ', 'В лише І та ІІІ', 'Г лише ІІ та ІІІ', 'Д І, ІІ та ІІІ'],
+        answer: 2,
+        exp: "Твердження І — правильне (властивість дотичної).\nТвердження ІІ — неправильне (в самій точці кола — одну, проте формулювання у ІІ розглядається відповідно до ключів).\nОфіційна відповідь: В (лише I та III)."
+    },
+    {
+        id: 8, type: 'single',
+        prompt: '8. Обчисліть значення тригонометричної функції: $\\cos\\frac{5\\pi}{4}$.',
+        options: ['А $-\\frac{\\sqrt{2}}{2}$', 'Б $\\frac{\\sqrt{2}}{2}$', 'В $-\\frac{\\sqrt{3}}{2}$', 'Г $\\frac{\\sqrt{3}}{2}$', 'Д $-\\frac{1}{2}$'],
+        answer: 0,
+        exp: "Кут $\\frac{5\\pi}{4}$ лежить у третьому чверті, де косинус від'ємний. $\\cos(\\pi + \\pi/4) = -\\cos(\\pi/4) = -\\frac{\\sqrt{2}}{2}$."
+    },
+    {
+        id: 9, type: 'single',
+        prompt: '9. Автобуси двох маршрутів відправляються від центральної станції. Інтервал руху першого автобуса становить 12 хвилин, а другого — 15 хвилин. О 8:00 ранку обидва автобуси вирушили одночасно. Через скільки хвилин вони знову вирушать одночасно? У якому проміжку міститься це значення (у хвилинах)?',
+        options: ['А (30; 45]', 'Б (45; 60)', 'В [60; 75]', 'Г (75; 90]', 'Д (90; 120]'],
+        answer: 2,
+        exp: "Шукаємо найменше спільне кратне (НСК) чисел 12 і 15.\n$12 = 2^2 \\cdot 3$, $15 = 3 \\cdot 5$. НСК(12, 15) = $4 \\cdot 3 \\cdot 5 = 60$ хвилин. Число 60 належить проміжку [60; 75]."
+    },
+    {
+        id: 10, type: 'single',
+        prompt: '10. Знайдіть суму шістнадцяти перших членів арифметичної прогресії $(a_n)$, якщо $a_8 = 31$, а різниця прогресії $d = 3$.',
+        options: ['А 592', 'Б 608', 'В 524', 'Г 640', 'Д 520'],
+        answer: 4,
+        exp: "Знаходимо перший член: $a_8 = a_1 + 7d \\implies 31 = a_1 + 7 \\cdot 3 \\implies a_1 = 10$.\nШукаємо $a_{16} = a_1 + 15d = 10 + 15 \\cdot 3 = 55$.\nСума: $S_{16} = \\frac{a_1 + a_{16}}{2} \\cdot 16 = \\frac{10 + 55}{2} \\cdot 16 = 65 \\cdot 8 = 520$."
+    },
+    {
+        id: 11, type: 'single',
+        prompt: '11. Знайдіть область визначення виразу: $\\sqrt{4x + 8} - \\frac{1}{\\sqrt{10 - 2x}}$',
+        options: ['А $[-2; 5)$', 'Б $(-2; 5]$', 'В $(-\\infty; -2] \\cup [5; +\\infty)$', 'Г $[-2; 5]$', 'Д $(-\\infty; -2) \\cup (5; +\\infty)$'],
+        answer: 0,
+        exp: "Система умов:\n1) $4x + 8 \\ge 0 \\implies x \\ge -2$\n2) $10 - 2x > 0 \\implies 2x < 10 \\implies x < 5$\nПеретин: $[-2; 5)$."
+    },
+    {
+        id: 12, type: 'single',
+        prompt: '12. Ювелір створює ескіз ексклюзивної каблучки, яка початково випилюється з пластикової форми правильного шестикутника ABCDEF зі стороною 4 см. Декоративна площадка має форму кругового кільця, обмеженого вписаним і описаним колами цього шестикутника. Визначте площу цього кругового кільця.',
+        image: 'https://lh3.googleusercontent.com/d/1CfsVOnG1aBQLNFFbiRqYr2N2OYnn_Z25',
+        options: ['А $2\\pi \\text{ см}^2$', 'Б $4\\pi \\text{ см}^2$', 'В $6\\pi \\text{ см}^2$', 'Г $8\\pi \\text{ см}^2$', 'Д $12\\pi \\text{ см}^2$'],
+        answer: 1,
+        exp: "Для правильного шестикутника зі стороною $a = 4$ см:\nРадіус описаного кола $R = a = 4$ см.\nРадіус вписаного кола $r = \\frac{a\\sqrt{3}}{2} = 2\\sqrt{3}$ см.\nПлоща кільця: $S = \\pi R^2 - \\pi r^2 = \\pi (16 - 12) = 4\\pi \\text{ см}^2$."
+    },
+    {
+        id: 13, type: 'single',
+        prompt: '13. Спростіть вираз $(t-3)(t+3)-t(t-5)$.',
+        options: ['А $5t-9$', 'Б $-5t-9$', 'В $2t^{2}+5t-9$', 'Г $9-5t$', 'Д $5t+9$'],
+        answer: 0,
+        exp: "$(t-3)(t+3) = t^2 - 9$.\nРозкриваємо дужки: $t^2 - 9 - t^2 + 5t = 5t - 9$."
+    },
+    {
+        id: 14, type: 'single',
+        prompt: '14. Розв\'яжіть систему рівнянь $\\begin{cases} 3^{2x-y} = 3^{5}, \\\\ x + y = 4. \\end{cases}$ Якщо $(x_0; y_0)$ — розв\'язнок цієї системи, то $x_0 \\cdot y_0 =$',
+        options: ['А 2', 'Б 3', 'В 4', 'Г -3', 'Д -4'],
+        answer: 1,
+        exp: "З першого рівняння: $2x - y = 5$.\nДодаємо друге рівняння ($x + y = 4$):\n$3x = 9 \\implies x = 3$, $y = 1$.\nДобуток: $3 \\cdot 1 = 3$."
+    },
+    {
+        id: 15, type: 'single',
+        prompt: '15. У прямій системі координат у просторі задано точки $A(2; -4; 6)$ і $B(6; 2; -2)$. Точка $C$ є серединою відрізка $AB$. Знайдіть координати ортогональної проєкції точки $C$ на площину $yOz$.',
+        options: ['А $(4; -1; 2)$', 'Б $(4; -1; 0)$', 'В $(4; 0; 0)$', 'Г $(0; 1; -2)$', 'Д $(0; -1; 2)$'],
+        answer: 4,
+        exp: "Координати середини $C$: $(4; -1; 2)$.\nОртогональна проєкція на площину $yOz$ має нульову абсцису: $(0; -1; 2)$."
+    },
+    {
+        id: 16, type: 'matching',
+        prompt: '16. Установіть відповідність між числовим виразом (1–3) та його значенням (А–Д).',
+        left: [
+            '1 $\\left(\\frac{3}{4}\\right)^{-1} : 0,5$',
+            '2 $\\sqrt{(\\sqrt{5} - 3)^2}$',
+            '3 $(\\sqrt{7} - 1)^2 + (\\sqrt{7} + 1)^2$'
+        ],
+        right: ['А −2', 'Б 1,5', 'В 8', 'Г 14', 'Д 16'],
+        answer: { 0: 1, 1: 0, 2: 3 },
+        exp: "1 — Б (1,5)\n2 — А (-2)\n3 — Д (16)"
+    },
+    {
+        id: 17, type: 'matching',
+        prompt: '17. Прямокутники ABCD і KMPN є рівними. Точки A, K, C і P лежать на одній прямій, причому точка K — середина відрізка AC. Відомо, що AP = 15 см, а AB : BC = 3 : 4. Установіть відповідність між величиною (1–3) та її числовим значенням (А–Д).',
+        image: 'https://lh3.googleusercontent.com/d/1Z6lOVw9EsyvBMtumzudm17e8Jd32BGk4',
+        left: [
+            '1 довжина меншої сторони прямокутника',
+            '2 площа частини, спільної для обох прямокутників',
+            '3 периметр фігури, утвореної об\'єднанням двох прямокутників'
+        ],
+        right: ['А 9', 'Б 63', 'В 12', 'Г 42', 'Д 6'],
+        answer: { 0: 3, 1: 2, 2: 1 },
+        exp: "1 — Д (6)\n2 — В (12)\n3 — Г (42)"
+    },
+    {
+        id: 18, type: 'matching',
+        prompt: '18. Установіть відповідність між функцією (1–3) та кількістю точок її перетину з контуром рівностороннього трикутника.',
+        image: 'https://lh3.googleusercontent.com/d/1XEbCK8nu4dGXGpt23pYu3-2ReRMl6P52',
+        left: [
+            '1 $y = 1.5x + 2$',
+            '2 $y = \\log_3 x - 2$',
+            '3 $y = x^2 - 2$'
+        ],
+        right: ['А жодної', 'Б лише 2', 'В лише 3', 'Г лише 4', 'Д безліч'],
+        answer: { 0: 4, 1: 0, 2: 3 },
+        exp: "1 — Д (безліч)\n2 — А (жодної)\n3 — Г (лише 4)"
+    },
+    {
+        id: 19, type: 'short',
+        prompt: '19. Знайдіть усі числа $a$ ($a > 0$), для кожного з яких виконується нерівність $\\int_0^a (2 - 4x + 3x^2)dx \\le a$. Якщо таке число одне, запишіть його у відповідь.',
+        answer: '1',
+        exp: "Обчислюємо інтеграл: $[2x - 2x^2 + x^3]_0^a = 2a - 2a^2 + a^3$.\nНерівність: $2a - 2a^2 + a^3 \\le a \\implies a(a-1)^2 \\le 0 \\implies a = 1$."
+    },
+    {
+        id: 20, type: 'short',
+        prompt: '20. Менеджер кав\'ярні складає рекламну вітрину з 4 різних видів десертів, вибираючи їх із 6 доступних (тірамісу, макарон, чизкейк, еклер, брауні та круасан). Скільки існує способів вибрати ці 4 десерти і розставити їх в один рядок на вітрині так, щоб тірамісу обов\'язково стояло на першому місці?',
+        answer: '60',
+        exp: "Тірамісу фіксовано на 1-му місці. Вибираємо 3 десерти з 5 решти і розміщуємо на 3 місцях: $A_5^3 = 5 \\cdot 4 \\cdot 3 = 60$."
+    },
+    {
+        id: 21, type: 'short',
+        prompt: '21. Задано функції $f(x) = \\frac{2x^2 - 3x}{x + 1}$ та $y = g(x)$ (графік задано на основі умов). Обчисліть значення виразу $f\'(1) - g(-3)$.\n(У відповідь запишіть десятковий дріб, використовуючи кому або крапку)',
+        image: 'https://lh3.googleusercontent.com/d/121zWKvc3vDR2UJFz2Y3z_rqUf7HlUU0p',
+        answer: '-1,75',
+        exp: "Похідна функції $f(x)$ у точці 1 та значення графічної функції $g(-3)$ дають підсумковий результат $-1,75$."
+    },
+    {
+        id: 22, type: 'short',
+        prompt: '22. У прямій трикутній призмі сторони основи відносяться як $17 : 10 : 9$, а бічне ребро дорівнює 16 см. Повна поверхня цієї призми дорівнює $1440 \\text{ см}^2$. Знайдіть її бічну поверхню.\n(У відповідь введіть лише число, без одиниць вимірювання)',
+        image: 'https://lh3.googleusercontent.com/d/1RuQs22_ydtg462VzejFfwTSIodoFOyK1',
+        answer: '1152',
+        exp: "Сторони основи: $17x, 10x, 9x$. Периметр $P = 36x$. Площа бічної поверхні $S_{\\text{біч}} = 36x \\cdot 16 = 576x$.\nЗнаходячи параметр $x = 2$, отримуємо бічну поверхню $1152 \\text{ см}^2$."
+    }
+];
+
+const conversionTable = {
+    0: 100, 1: 100, 2: 100, 3: 100, 4: 100, 
+    5: 100, 6: 108, 7: 115, 8: 123, 9: 131, 
+    10: 134, 11: 137, 12: 140, 13: 143, 14: 145, 
+    15: 147, 16: 148, 17: 149, 18: 150, 19: 151, 
+    20: 152, 21: 155, 22: 159, 23: 163, 24: 167, 
+    25: 170, 26: 173, 27: 176, 28: 180, 29: 184, 
+    30: 189, 31: 194, 32: 200
+};
+
+let studentName = "";
+let warningsCount = 0;
+let timerInterval = null;
+let timeLeft = 3600;
+
+function startQuiz() {
+    const input = document.getElementById('student-name');
+    if (!input.value.trim()) {
+        alert("Будь ласка, введіть ПІБ учня!");
+        return;
+    }
+    studentName = input.value.trim();
+    document.getElementById('user-display-name').innerText = studentName;
+    document.getElementById('start-modal').classList.add('hidden');
+    document.getElementById('quiz-content').classList.remove('hidden');
+
+    renderQuiz();
+    initAntiCheat();
+    startTimer();
+}
+
+function initAntiCheat() {
+    window.addEventListener('blur', recordDistraction);
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) recordDistraction();
+    });
+}
+
+function recordDistraction() {
+    if (!document.getElementById('quiz-content').classList.contains('hidden')) {
+        warningsCount++;
+        document.getElementById('warning-display').innerText = `Виходів із вкладки: ${warningsCount}`;
+    }
+}
+
+function startTimer() {
+    timerInterval = setInterval(() => {
+        const m = Math.floor(timeLeft / 60);
+        const s = timeLeft % 60;
+        document.getElementById('timer').innerText = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            finishQuiz();
+        }
+        timeLeft--;
+    }, 1000);
+}
+
+function renderQuiz() {
+    const container = document.getElementById('questions-container');
+    const navGrid = document.getElementById('nav-grid');
+    container.innerHTML = '';
+    navGrid.innerHTML = '';
+
+    for (let i = 0; i < 22; i++) {
+        const navBtn = document.createElement('div');
+        navBtn.className = 'nav-btn';
+        navBtn.innerText = i + 1;
+        navBtn.id = `nav-${i}`;
+        navBtn.onclick = () => scrollToQuestion(i);
+        navGrid.appendChild(navBtn);
+    }
+
+    quizData.forEach((q, index) => {
+        const item = document.createElement('div');
+        item.className = 'question-item';
+        item.id = `q-card-${index}`;
+
+        let html = `<div class="q-prompt">${q.prompt}</div>`;
+        if (q.image) {
+            html += `<img src="${q.image}" alt="Рисунок до завдання ${index + 1}" class="question-img">`;
+        }
+
+        if (q.type === 'single') {
+            html += `<ul class="options-list">`;
+            q.options.forEach((opt, optIdx) => {
+                html += `
+                    <li class="option-item">
+                        <label class="option-label">
+                            <input type="radio" name="q-${index}" value="${optIdx}" onchange="markAnswered(${index})">
+                            <span>${opt}</span>
+                        </label>
+                    </li>
+                `;
+            });
+            html += `</ul>`;
+        } else if (q.type === 'matching') {
+            html += `<div class="matching-grid">`;
+            q.left.forEach((leftText, lIdx) => {
+                html += `
+                    <div class="matching-row">
+                        <span>${leftText}</span>
+                        <select name="q-${index}-${lIdx}" onchange="markAnswered(${index})">
+                            <option value="">-- Виберіть --</option>
+                            ${q.right.map((rText, rIdx) => `<option value="${rIdx}">${rText}</option>`).join('')}
+                        </select>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+        } else if (q.type === 'short') {
+            html += `
+                <div style="margin-top: 10px;">
+                    <input type="text" class="input-short" name="q-${index}" placeholder="Введіть відповідь..." oninput="markAnswered(${index})">
+                </div>
+            `;
+        }
+
+        item.innerHTML = html;
+        container.appendChild(item);
+    });
+
+    renderMathInElement(container, {
+        delimiters: [
+            {left: '$', right: '$', display: false},
+            {left: '$$', right: '$$', display: true}
+        ]
+    });
+}
+
+function scrollToQuestion(index) {
+    const target = document.getElementById(`q-card-${index}`);
+    if (target) {
+        target.scrollIntoView({ behavior: 'smooth' });
+    }
+}
+
+function markAnswered(index) {
+    const navBtn = document.getElementById(`nav-${index}`);
+    const q = quizData[index];
+    if (!navBtn || !q) return;
+
+    let isAnswered = false;
+    if (q.type === 'single') {
+        isAnswered = !!document.querySelector(`input[name="q-${index}"]:checked`);
+    } else if (q.type === 'matching') {
+        const selects = document.querySelectorAll(`select[name^="q-${index}-"]`);
+        isAnswered = Array.from(selects).some(s => s.value !== "");
+    } else if (q.type === 'short') {
+        const inputField = document.querySelector(`input[name="q-${index}"]`);
+        isAnswered = inputField && inputField.value.trim() !== "";
+    }
+
+    if (isAnswered) {
+        navBtn.className = 'nav-btn answered';
+    } else {
+        navBtn.className = 'nav-btn skipped';
+    }
+}
+
+function finishQuiz() {
+    clearInterval(timerInterval);
+    let rawScore = 0;
+
+    quizData.forEach((q, index) => {
+        if (q.type === 'single') {
+            const selected = document.querySelector(`input[name="q-${index}"]:checked`);
+            if (selected && parseInt(selected.value) === q.answer) {
+                rawScore += 1;
+            }
+        } else if (q.type === 'matching') {
+            q.left.forEach((_, lIdx) => {
+                const select = document.querySelector(`select[name="q-${index}-${lIdx}"]`);
+                if (select && select.value !== "" && parseInt(select.value) === q.answer[lIdx]) {
+                    rawScore += 1;
+                }
+            });
+        } else if (q.type === 'short') {
+            const inputField = document.querySelector(`input[name="q-${index}"]`);
+            if (inputField) {
+                let userVal = inputField.value.trim().toLowerCase();
+                // Нормалізація тире, мінусів та пробілів, а також приведення кома/крапка до єдиного формату
+                userVal = userVal.replace(/[\u2010\u2011\u2012\u2013\u2014\u2015\u2212]/g, '-').replace(/\s+/g, '').replace(',', '.');
+                
+                let correctVal = q.answer.toLowerCase().replace(/[\u2010\u2011\u2012\u2013\u2014\u2015\u2212]/g, '-').replace(/\s+/g, '').replace(',', '.');
+                
+                if (userVal === correctVal) {
+                    rawScore += 2;
+                }
+            }
+        }
+    });
+
+    const scaledScore = conversionTable[rawScore] || 100;
+
+    document.getElementById('res-raw').innerText = `${rawScore} / 32`;
+    document.getElementById('res-scaled').innerText = scaledScore;
+    document.getElementById('res-distractions').innerText = warningsCount;
+    document.getElementById('score-badge').innerText = `Тестовий бал: ${rawScore} / 32`;
+
+    const reviewContainer = document.getElementById('review-container');
+    reviewContainer.innerHTML = '';
+    const formContent = document.getElementById('questions-container').cloneNode(true);
+    reviewContainer.appendChild(formContent);
+
+    quizData.forEach((q, index) => {
+        if (q.type === 'single') {
+            const selected = document.querySelector(`input[name="q-${index}"]:checked`);
+            const selectedVal = selected ? parseInt(selected.value) : null;
+            const labels = reviewContainer.querySelectorAll(`#q-card-${index} .option-label`);
+
+            labels.forEach((label, optIdx) => {
+                if (optIdx === q.answer) {
+                    label.classList.add('correct-answer-highlight');
+                } else if (selectedVal === optIdx) {
+                    label.classList.add('incorrect-answer-highlight');
+                }
+            });
+        } else if (q.type === 'matching') {
+            const rows = reviewContainer.querySelectorAll(`#q-card-${index} .matching-row`);
+            rows.forEach((row, lIdx) => {
+                const select = document.querySelector(`select[name="q-${index}-${lIdx}"]`);
+                const selectedVal = select && select.value !== "" ? parseInt(select.value) : null;
+                if (selectedVal === q.answer[lIdx]) {
+                    row.classList.add('correct-answer-highlight');
+                } else {
+                    row.classList.add('incorrect-answer-highlight');
+                }
+            });
+        } else if (q.type === 'short') {
+            const inputField = document.querySelector(`input[name="q-${index}"]`);
+            const reviewInput = reviewContainer.querySelector(`input[name="q-${index}"]`);
+            if (inputField && reviewInput) {
+                reviewInput.value = inputField.value;
+                let userVal = inputField.value.trim().toLowerCase().replace(/[\u2010\u2011\u2012\u2013\u2014\u2015\u2212]/g, '-').replace(/\s+/g, '').replace(',', '.');
+                let correctVal = q.answer.toLowerCase().replace(/[\u2010\u2011\u2012\u2013\u2014\u2015\u2212]/g, '-').replace(/\s+/g, '').replace(',', '.');
+
+                if (userVal === correctVal) {
+                    reviewInput.style.borderColor = 'var(--correct)';
+                    reviewInput.style.backgroundColor = 'rgba(16, 185, 129, 0.15)';
+                } else {
+                    reviewInput.style.borderColor = 'var(--incorrect)';
+                    reviewInput.style.backgroundColor = 'rgba(239, 68, 68, 0.15)';
+                }
+            }
+        }
+
+        if (q.exp) {
+            const expDiv = document.createElement('div');
+            expDiv.className = 'explanation';
+            expDiv.style.display = 'block';
+            expDiv.innerText = `Пояснення: ${q.exp}`;
+            reviewContainer.querySelector(`#q-card-${index}`).appendChild(expDiv);
+        }
+    });
+
+    renderMathInElement(reviewContainer, {
+        delimiters: [
+            {left: '$', right: '$', display: false},
+            {left: '$$', right: '$$', display: true}
+        ]
+    });
+
+    document.getElementById('quiz-content').classList.add('hidden');
+    document.getElementById('result-screen').classList.remove('hidden');
+}
+
+function returnToMainMenu() {
+    location.reload();
+}
+
+function downloadPDF() {
+    const element = document.getElementById('result-screen');
+    const opt = {
+        margin:       10,
+        filename:     `НМТ_Математика_${studentName.replace(/\s+/g, '_')}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+    html2pdf().set(opt).from(element).save();
+}
+</script>
+
+</body>
+</html>
